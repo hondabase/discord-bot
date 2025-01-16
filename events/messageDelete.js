@@ -1,4 +1,4 @@
 export async function execute(message) {
-	// Check if the id of this message is one of article requests
-	console.log(`Message deleted: ${message.id}`);
+	// TODO: Check if the id of this message is one of article requests
+	logUserActivity(message.author.id, message.author.username, 'message', { message: message.content });
 }

@@ -6,6 +6,7 @@
     "dotenv": "^16.4.5",
     "fs": "^0.0.1-security",
     "moment-timezone": "^0.5.45",
-    "octokit": "^4.0.2"
+    "mysql2": "^3.12.0",
+    "octokit": "^4.1.0"
   }
 }

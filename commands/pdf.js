@@ -10,13 +10,11 @@ import { SlashCommandBuilder } from 'discord.js';
 import { client } from '../index.js';
 import { GITHUB_ORG_URL } from '../config.js';
 
-const octokit = new Octokit();
-
 let pdfFiles = [];
 
-async function fetchPDFFiles(owner, repo, path = '') {
+async function fetchPDFFiles(path = '') {
 	try {
-		const { data } = await octokit.repos.getContent({ owner, repo, path });
+		const { data } = await new Octokit().repos.getContent({ owner: 'hondatabase', repo: 'pdf-manuals', path });
 
 		let files = [];
 
@@ -25,7 +23,7 @@ async function fetchPDFFiles(owner, repo, path = '') {
 			if (item.type === 'file' && item.name.endsWith('.pdf')) {
 				files.push(item.path);
 			} else if (item.type === 'dir') {
-				const moarFiles = await fetchPDFFiles(owner, repo, item.path);
+				const moarFiles = await fetchPDFFiles(item.path);
 				files = files.concat(moarFiles);
 			}
 		}
@@ -62,7 +60,7 @@ export async function execute(interaction) {
 
 client.on('ready', () => {
 	console.log('Fetching PDF files...');
-	fetchPDFFiles('hondatabase', 'pdf-manuals')
+	fetchPDFFiles()
 		.then(files => {
 			pdfFiles = files;
 			console.log(files.length + ' PDF files fetched.');
