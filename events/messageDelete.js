@@ -1,4 +1,7 @@
+import { logUserActivity } from '../utils/database.js';
+
 export async function execute(message) {
-	// TODO: Check if the id of this message is one of article requests
-	logUserActivity(message.author.id, message.author.username, 'message', { message: message.content });
+	if (!message?.author) return; // Ignore partial messages or system messages
+	
+	logUserActivity(message.author.id, message.author.username, 'delete_message', { content: message.content });
 }
