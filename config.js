@@ -10,3 +10,8 @@ export const HANGOUT_CHANNEL_ID = process.env.HANGOUT_CHANNEL_ID
 export const ARTICLE_REQUEST_CHANNEL_ID = process.env.ARTICLE_REQUEST_CHANNEL_ID
 export const ARTICLE_REQUEST_CHANNEL_TOPARTICLES_MESSAGE_ID = process.env.ARTICLE_REQUEST_CHANNEL_TOPARTICLES_MESSAGE_ID
 export const GITHUB_ORG_URL = "https://github.com/hondatabase/"
+
+export const MYSQL_USER = process.env.MYSQL_USER
+export const MYSQL_PASSWORD = process.env.MYSQL_PASSWORD
+
+export const WATCHDOG_WEBHOOK_URL = process.env.WATCHDOG_WEBHOOK_URL

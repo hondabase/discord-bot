@@ -1,21 +1,17 @@
 import mysql from 'mysql2/promise';
-import dotenv from 'dotenv';
-dotenv.config();
+import { MYSQL_USER, MYSQL_PASSWORD } from '../config.js';
 
 const pool = mysql.createPool({
 	host: 'localhost',
-	user: process.env.MYSQL_USER,
-	password: process.env.MYSQL_PASSWORD,
+	user: MYSQL_USER,
+	password: MYSQL_PASSWORD,
 	database: 'hondatabase_discordbot'
 });
 
 export async function logUserActivity(userId, username, action, details = null) {
 	if (!userId || !action) return;
 	
-	const [result] = await pool.execute(
-		'INSERT INTO user_activities (user_id, username, action, details, timestamp) VALUES (?, ?, ?, ?, NOW())',
-		[userId, username, action, details]
-	);
+	const [result] = await pool.execute('INSERT INTO user_activities (user_id, username, action, details, timestamp) VALUES (?, ?, ?, ?, NOW())',[userId, username, action, details]);
 	
 	return result;
 }
@@ -27,24 +23,19 @@ export async function getSetting(key) {
 
 export async function setSetting(key, value) {
 	if (!key || value === undefined) return;
-	await pool.execute('INSERT INTO bot_settings (`key`, value) VALUES (?, ?) ON DUPLICATE KEY UPDATE value = ?', 
-		[key, value, value]);
+	await pool.execute('INSERT INTO bot_settings (`key`, value) VALUES (?, ?) ON DUPLICATE KEY UPDATE value = ?', [key, value, value]);
 }
 
-export async function getCurrentCommit() {
-	return getSetting('commit_hash');
-}
+export const getCurrentCommit = () => getSetting('commit_hash');
 
-export async function updateCommit(hash) {
-	return setSetting('commit_hash', hash);
-}
+export const updateCommit = (hash) => setSetting('commit_hash', hash);
 
 // Initialize database and tables
 export async function initDatabase() {
 	const connection = await mysql.createConnection({
 		host: 'localhost',
-		user: process.env.MYSQL_USER,
-		password: process.env.MYSQL_PASSWORD
+		user: MYSQL_USER,
+		password: MYSQL_PASSWORD
 	});
 
 	await connection.execute('CREATE DATABASE IF NOT EXISTS hondatabase_discordbot');
