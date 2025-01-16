@@ -1,6 +1,6 @@
 import { Client, GatewayIntentBits, Collection } from 'discord.js';
 import { readdirSync } from 'fs';
-import { BOT_TOKEN } from './config.js';
+import { BOT_TOKEN, WATCHDOG_WEBHOOK_URL } from './config.js';
 import { initDatabase } from './utils/database.js';
 
 export const client = new Client({ 
@@ -19,9 +19,21 @@ export const client = new Client({
 client.commands     = new Collection();
 client.guildInvites = new Collection();
 
+function sendWebhook(message) {
+    fetch('https://discord.com/api/webhooks/' + WATCHDOG_WEBHOOK_URL, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({content: message})
+    });
+}
+
 // Prevent crashing
-process.on('unhandledRejection', error => console.error('Unhandled promise rejection:', error));
+process.on('unhandledRejection', error => {
+    sendWebhook(`An unhandled promise rejection has occurred in the bot! Please check the logs for more information.`);
+    console.error('Unhandled promise rejection:', error);
+});
 process.on('uncaughtException', error => {
+    sendWebhook(`An uncaught exception has occurred in the bot! Please check the logs for more information.`);
     console.error('Uncaught exception:', error);
     process.exit(1);
 });
