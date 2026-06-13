@@ -1,4 +1,5 @@
 import getBlacklist from '../utils/getBlacklist.js';
+import { logUserActivity } from '../utils/database.js';
 import { STAFF_CHANNEL_ID } from '../config.js';
 
 export async function execute(client, member) {

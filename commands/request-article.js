@@ -72,7 +72,7 @@ export async function execute(interaction) {
 }
 
 async function saveArticleRequest(articleData) {
-    const filePath = join(__dirname, '..', 'data', 'articles.json');
+    const filePath = join(process.cwd(), 'data', 'articles.json');
     try {
         let articles = [];
         try {
