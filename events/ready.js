@@ -1,14 +1,11 @@
 import { ActivityType } from "discord.js";
 import { ARTICLE_REQUEST_CHANNEL_ID } from '../config.js';
 import setupArticleRequestCollectors from '../utils/articleRequestCollectors.js';
-import { checkVersion } from '../utils/versionCheck.js';
 import { recordMemberJoin } from '../utils/database.js';
 
 export const name = 'ready';
 export async function execute(client) {
 	console.log(`Ready! Logged in as ${client.user.tag}`);
-	
-	await checkVersion(client);
 	
 	client.user.setPresence({ activities: [{ name: 'We currently have 4 articles.', type: ActivityType.Custom }], status: 'online' });
 
