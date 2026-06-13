@@ -2,7 +2,7 @@ import { promises as fs } from 'fs';
 import { join } from 'path';
 
 export default async () => {
-    const blacklistPath = join(__dirname, '..', 'data', 'blacklist.json');
+    const blacklistPath = join(process.cwd(), 'data', 'blacklist.json');
     try {
         const data = await fs.readFile(blacklistPath, 'utf8');
         return JSON.parse(data);
