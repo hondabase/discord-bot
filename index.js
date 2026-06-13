@@ -20,6 +20,8 @@ client.commands     = new Collection();
 client.guildInvites = new Collection();
 
 function sendWebhook(message) {
+    if (!WATCHDOG_WEBHOOK_URL) return;
+
     fetch('https://discord.com/api/webhooks/' + WATCHDOG_WEBHOOK_URL, {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
