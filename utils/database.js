@@ -5,7 +5,11 @@ import {
 	FILES_MYSQL_PASSWORD,
 	FILES_MYSQL_USER,
 	MYSQL_USER,
-	MYSQL_PASSWORD
+	MYSQL_PASSWORD,
+	SHARED_DISCORD_MYSQL_DATABASE,
+	SHARED_DISCORD_MYSQL_HOST,
+	SHARED_DISCORD_MYSQL_PASSWORD,
+	SHARED_DISCORD_MYSQL_USER
 } from '../config.js';
 
 const pool = mysql.createPool({
@@ -24,6 +28,14 @@ const filesPool = FILES_MYSQL_USER && FILES_MYSQL_DATABASE
 		connectionLimit: 2
 	})
 	: null;
+
+export const sharedDiscordPool = mysql.createPool({
+	host: SHARED_DISCORD_MYSQL_HOST,
+	user: SHARED_DISCORD_MYSQL_USER,
+	password: SHARED_DISCORD_MYSQL_PASSWORD,
+	database: SHARED_DISCORD_MYSQL_DATABASE,
+	connectionLimit: 2
+});
 
 export async function logUserActivity(userId, username, action, details = null) {
 	if (!userId || !action) return;

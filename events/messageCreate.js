@@ -4,12 +4,26 @@ import { PermissionFlagsBits } from 'discord.js';
 import { getUserTimezone } from '../handlers/TimezoneHandler.js';
 import { STAFF_CHANNEL_ID, STAFF_ROLE_ID } from '../config.js';
 import { logUserActivity } from '../utils/database.js';
+import { checkMessageForBlockedImage } from '../utils/imageFingerprints.js';
 const INVITE_LINK_REGEX = /(discord\.gg\/|discord\.com\/invite\/)/i;
 
 export async function execute(_, message) {
 	if (message.author.bot) return;
 	logUserActivity(message.author.id, message.author.username, 'message').catch(error => console.error('Failed to log message activity:', error));
 	const isStaffMessage = message.member.roles.cache.has(STAFF_ROLE_ID);
+
+	try {
+		const match = await checkMessageForBlockedImage(message);
+		if (match) {
+			await message.delete().catch(console.error);
+			const warning = await message.channel.send(`${message.author}, that image is blocked on this server.`);
+			setTimeout(() => warning.delete().catch(() => {}), 10000);
+			console.log(`Removed blocked image from ${message.author.tag}; fingerprint ${match.fingerprint}, distance ${match.distance}`);
+			return;
+		}
+	} catch (error) {
+		console.error('Failed to check message images:', error);
+	}
 
 	// Check for Discord invite links
 	if (!isStaffMessage && INVITE_LINK_REGEX.test(message.content)) {

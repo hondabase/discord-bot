@@ -23,8 +23,8 @@ export async function execute(interaction) {
             description = 'Repository for our Discord bot code';
             break;
         case 'website':
-            repoName = 'hondatabase.com';
-            description = 'Repository for our main website hondatabase.com';
+            repoName = 'hondabase.com';
+            description = 'Repository for our main website hondabase.com';
             break;
         case 'files-archive':
             repoName = 'files-archive';
