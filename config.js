@@ -13,5 +13,9 @@ export const GITHUB_ORG_URL = "https://github.com/hondabase/"
 
 export const MYSQL_USER = process.env.MYSQL_USER
 export const MYSQL_PASSWORD = process.env.MYSQL_PASSWORD
+export const FILES_MYSQL_HOST = process.env.FILES_MYSQL_HOST || 'localhost'
+export const FILES_MYSQL_USER = process.env.FILES_MYSQL_USER || MYSQL_USER
+export const FILES_MYSQL_PASSWORD = process.env.FILES_MYSQL_PASSWORD || MYSQL_PASSWORD
+export const FILES_MYSQL_DATABASE = process.env.FILES_MYSQL_DATABASE || 'hondabase_files'
 
 export const WATCHDOG_WEBHOOK_URL = process.env.WATCHDOG_WEBHOOK_URL

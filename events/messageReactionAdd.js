@@ -1,9 +1,11 @@
 import { promises as fs } from 'fs';
 import { join } from 'path';
 import { ARTICLE_REQUEST_CHANNEL_ID, ARTICLE_REQUEST_CHANNEL_TOPARTICLES_MESSAGE_ID } from '../config.js';
+import { logUserActivity } from '../utils/database.js';
 
 export async function execute(_, reaction, user) {
     if (user.bot) return;
+    logUserActivity(user.id, user.username, 'reaction').catch(error => console.error('Failed to log reaction activity:', error));
 
     // Check if it's a partial reaction
     if (reaction.partial) {

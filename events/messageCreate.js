@@ -3,10 +3,12 @@ import { PermissionFlagsBits } from 'discord.js';
 
 import { getUserTimezone } from '../handlers/TimezoneHandler.js';
 import { STAFF_CHANNEL_ID, STAFF_ROLE_ID } from '../config.js';
+import { logUserActivity } from '../utils/database.js';
 const INVITE_LINK_REGEX = /(discord\.gg\/|discord\.com\/invite\/)/i;
 
 export async function execute(_, message) {
 	if (message.author.bot) return;
+	logUserActivity(message.author.id, message.author.username, 'message').catch(error => console.error('Failed to log message activity:', error));
 	const isStaffMessage = message.member.roles.cache.has(STAFF_ROLE_ID);
 
 	// Check for Discord invite links

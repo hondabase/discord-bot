@@ -1,10 +1,12 @@
 import getBlacklist from '../utils/getBlacklist.js';
-import { logUserActivity } from '../utils/database.js';
+import { logUserActivity, recordMemberJoin } from '../utils/database.js';
 import { STAFF_CHANNEL_ID } from '../config.js';
 
 export async function execute(client, member) {
 	const { user, guild } = member;
 	const username = user.username;
+
+	await recordMemberJoin(member);
 
 	let inviter = 'Unknown';
 	try {
@@ -22,7 +24,7 @@ export async function execute(client, member) {
 	const staffChannel = guild.channels.cache.get(STAFF_CHANNEL_ID);
 	staffChannel.send(`👥 **New member** 👥\nUser: **${user}**\nInvited by: **${inviter}**`);
 
-	logUserActivity(user.id, user.username, 'join', { inviter: inviter });
+	await logUserActivity(user.id, user.username, 'join', { inviter: inviter });
 
 	// Read blacklisted users from file
 	const blacklist = await getBlacklist();
@@ -33,6 +35,6 @@ export async function execute(client, member) {
 
 		staffChannel.send(`⚠️ **Alert** ⚠️\nUser **${user}** has been timed out for 24 hours. Reason: ${reason}`);
 
-		logUserActivity(user.id, user.username, 'timeout', { reason: reason });
+		await logUserActivity(user.id, user.username, 'timeout', { reason: reason });
 	}
 }
