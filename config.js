@@ -28,3 +28,6 @@ export const HONDABASE_MYSQL_PASSWORD = process.env.HONDABASE_MYSQL_PASSWORD || 
 export const HONDABASE_MYSQL_DATABASE = process.env.HONDABASE_MYSQL_DATABASE || 'hondabase'
 
 export const WATCHDOG_WEBHOOK_URL = process.env.WATCHDOG_WEBHOOK_URL
+
+export const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'llama3.2:3b'
+export const OLLAMA_API_URL = process.env.OLLAMA_API_URL || 'https://nasa.flaviopereira.cloud/ollama'

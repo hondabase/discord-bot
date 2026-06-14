@@ -5,12 +5,14 @@ import { getUserTimezone } from '../handlers/TimezoneHandler.js';
 import { STAFF_CHANNEL_ID, STAFF_ROLE_ID } from '../config.js';
 import { logUserActivity } from '../utils/database.js';
 import { checkMessageForBlockedImage } from '../utils/imageFingerprints.js';
+import { isAuthorized, handleThreadMessage, queryOllama, generateThreadTitle, splitMessage } from '../handlers/AiHandler.js';
+
 const INVITE_LINK_REGEX = /(discord\.gg\/|discord\.com\/invite\/)/i;
 
-export async function execute(_, message) {
+export async function execute(client, message) {
 	if (message.author.bot) return;
 	logUserActivity(message.author.id, message.author.username, 'message').catch(error => console.error('Failed to log message activity:', error));
-	const isStaffMessage = message.member.roles.cache.has(STAFF_ROLE_ID);
+	const isStaffMessage = message.member && message.member.roles.cache.has(STAFF_ROLE_ID);
 
 	try {
 		const match = await checkMessageForBlockedImage(message);
@@ -39,6 +41,125 @@ export async function execute(_, message) {
 		} else {
 			console.error(`Staff channel with ID ${STAFF_CHANNEL_ID} not found.`);
 		}
+	}
+
+	// AI Assistant thread handling
+	if (message.channel.isThread()) {
+		if (message.channel.ownerId === client.user.id) {
+			if (isAuthorized(message.member)) {
+				await handleThreadMessage(client, message);
+			}
+			return;
+		}
+	}
+
+	// AI Assistant main channel reply continuation
+	if (message.reference && message.reference.messageId) {
+		try {
+			const repliedMsg = await message.channel.messages.fetch(message.reference.messageId);
+			if (repliedMsg.author.id === client.user.id) {
+				if (isAuthorized(message.member)) {
+					const history = [];
+					if (repliedMsg.reference && repliedMsg.reference.messageId) {
+						try {
+							const firstPromptMsg = await message.channel.messages.fetch(repliedMsg.reference.messageId);
+							if (firstPromptMsg) {
+								history.push({ 
+									role: 'user', 
+									content: firstPromptMsg.content.replace(new RegExp(`<@!?${client.user.id}>`, 'g'), '').trim() 
+								});
+							}
+						} catch (e) {
+							// ignore
+						}
+					}
+
+					history.push({ role: 'assistant', content: repliedMsg.content });
+					history.push({ 
+						role: 'user', 
+						content: message.content.replace(new RegExp(`<@!?${client.user.id}>`, 'g'), '').trim() 
+					});
+
+					// Create the thread and status message immediately
+					const thread = await repliedMsg.startThread({
+						name: 'Hondabase+ AI Chat',
+						autoArchiveDuration: 60
+					});
+					const statusMsg = await thread.send('⏳ Enqueued...');
+
+					// Callback to handle real-time queue updates
+					const onQueueUpdate = async (pos, isProcessing) => {
+						try {
+							if (isProcessing) {
+								await statusMsg.edit('✍️ Soichiro is thinking...');
+								await thread.sendTyping().catch(() => {});
+							} else {
+								await statusMsg.edit(`⏳ Enqueued. Position in queue: ${pos}. Please wait...`);
+							}
+						} catch (err) {
+							// Fail silently
+						}
+					};
+
+					const userPrompt = history[0] ? history[0].content : message.content;
+					const replyText = await queryOllama(history, onQueueUpdate);
+					const chunks = splitMessage(replyText);
+
+					await statusMsg.edit(`${message.author}, ${chunks[0]}`);
+					for (const chunk of chunks) {
+						if (chunk !== chunks[0]) {
+							await thread.send(chunk);
+						}
+					}
+
+					// Set the thread name dynamically in the background
+					generateThreadTitle(userPrompt, repliedMsg.content).then(threadTitle => {
+						thread.setName(threadTitle).catch(console.error);
+					});
+				}
+				return;
+			}
+		} catch (error) {
+			console.error('Error handling reply continuation:', error);
+		}
+	}
+
+	// AI Assistant main channel mention check
+	const botMentionRegex = new RegExp(`<@!?${client.user.id}>`);
+	if (botMentionRegex.test(message.content)) {
+		if (isAuthorized(message.member)) {
+			const cleanPrompt = message.content.replace(botMentionRegex, '').trim();
+			if (!cleanPrompt) {
+				await message.reply('How can I help you today?');
+				return;
+			}
+
+			const statusMsg = await message.reply('⏳ Enqueued...');
+
+			// Callback to handle real-time queue updates
+			const onQueueUpdate = async (pos, isProcessing) => {
+				try {
+					if (isProcessing) {
+						await statusMsg.edit('✍️ Soichiro is thinking...');
+						await message.channel.sendTyping().catch(() => {});
+					} else {
+						await statusMsg.edit(`⏳ Enqueued. Position in queue: ${pos}. Please wait...`);
+					}
+				} catch (err) {
+					// Fail silently
+				}
+			};
+
+			const messages = [{ role: 'user', content: cleanPrompt }];
+			const responseText = await queryOllama(messages, onQueueUpdate);
+			const chunks = splitMessage(responseText);
+
+			await statusMsg.edit(chunks[0]);
+			for (let i = 1; i < chunks.length; i++) {
+				await message.channel.send(chunks[i]);
+			}
+		}
+		return;
 	}
 
 	// Check mentions for timezones

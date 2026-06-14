@@ -333,3 +333,87 @@ export async function getArticleCount() {
 		return 0;
 	}
 }
+
+const STOPWORDS = new Set([
+	'what', 'how', 'why', 'who', 'which', 'where', 'when',
+	'the', 'this', 'that', 'these', 'those', 'they', 'them',
+	'and', 'but', 'for', 'with', 'from', 'out', 'into',
+	'about', 'there', 'their', 'here', 'your', 'ours',
+	'have', 'has', 'had', 'was', 'were', 'been', 'being',
+	'does', 'did', 'done', 'doing', 'will', 'would', 'shall',
+	'should', 'can', 'could', 'may', 'might', 'must',
+	'some', 'any', 'all', 'none', 'both', 'each', 'every',
+	'other', 'another', 'such', 'than', 'then', 'thus',
+	'you', 'your', 'yours', 'him', 'her', 'its', 'their', 'theirs',
+	'are', 'was', 'were', 'have', 'has', 'had', 'been'
+]);
+
+export function extractKeywords(text) {
+	if (!text) return [];
+	return text
+		.toLowerCase()
+		.replace(/[^a-z0-9\s]/g, '')
+		.split(/\s+/)
+		.map(w => w.trim())
+		.filter(w => w.length > 2 && !STOPWORDS.has(w));
+}
+
+export async function searchKnowledge(queryText) {
+	const results = {
+		article: null,
+		files: []
+	};
+
+	if (!queryText || typeof queryText !== 'string') return results;
+	const keywords = extractKeywords(queryText);
+	
+	// If no valid keywords (only stopwords/short words), short-circuit immediately
+	if (keywords.length === 0) return results;
+
+	const cleanQuery = keywords.join(' ');
+
+	// 1. Search hondabasePool articles using FULLTEXT match
+	if (hondabasePool) {
+		try {
+			const [rows] = await hondabasePool.execute(`
+				SELECT title, summary, body_text,
+				       MATCH(title, summary, body_text) AGAINST(? IN NATURAL LANGUAGE MODE) AS score
+				FROM articles
+				WHERE MATCH(title, summary, body_text) AGAINST(? IN NATURAL LANGUAGE MODE)
+				ORDER BY score DESC
+				LIMIT 1
+			`, [cleanQuery, cleanQuery]);
+			if (rows.length > 0 && rows[0].score > 0) {
+				results.article = rows[0];
+			}
+		} catch (error) {
+			console.error('Failed to search articles:', error);
+		}
+	}
+
+	// 2. Search filesPool files using keyword LIKE matching
+	if (filesPool) {
+		try {
+			const searchKeywords = keywords.slice(0, 5); // limit to 5 keywords
+			const conditions = [];
+			const params = [];
+			for (const keyword of searchKeywords) {
+				conditions.push(`(name LIKE ? OR display_name LIKE ? OR description LIKE ?)`);
+				const pattern = `%${keyword}%`;
+				params.push(pattern, pattern, pattern);
+			}
+			const query = `
+				SELECT name, display_name, description
+				FROM files
+				WHERE status = 'approved' AND (${conditions.join(' OR ')})
+				LIMIT 3
+			`;
+			const [rows] = await filesPool.execute(query, params);
+			results.files = rows;
+		} catch (error) {
+			console.error('Failed to search files:', error);
+		}
+	}
+
+	return results;
+}

@@ -35,6 +35,22 @@ export async function execute(client) {
 		} catch (error) {
 			console.error(`Failed to initialize member sessions for guild ${guild.id}:`, error);
 		}
+
+		// Check/create Hondabase+ role
+		try {
+			const roles = await guild.roles.fetch();
+			const hasHondabasePlus = roles.some(role => role.name === 'Hondabase+');
+			if (!hasHondabasePlus) {
+				const newRole = await guild.roles.create({
+					name: 'Hondabase+',
+					color: 'Blue',
+					reason: 'AI Assistant member role'
+				});
+				console.log(`Created missing 'Hondabase+' role in guild: ${guild.name} (ID: ${newRole.id})`);
+			}
+		} catch (error) {
+			console.error(`Failed to check/create 'Hondabase+' role for guild ${guild.id}:`, error);
+		}
 	}
 
 	// Setup collectors for existing article requests
