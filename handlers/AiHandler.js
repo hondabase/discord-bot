@@ -62,7 +62,9 @@ export async function queryOllama(messages, onQueueUpdate) {
     // Format context
     let formattedContext = '';
     if (searchResults.article) {
-        formattedContext += `--- ARTICLE ---\nTitle: ${searchResults.article.title}\nSummary: ${searchResults.article.summary}\nBody:\n${searchResults.article.body_text}\n\n`;
+        const body = searchResults.article.body_text || '';
+        const truncatedBody = body.length > 1500 ? body.substring(0, 1500) + '\n[...Content truncated for length...]' : body;
+        formattedContext += `--- ARTICLE ---\nTitle: ${searchResults.article.title}\nSummary: ${searchResults.article.summary}\nBody:\n${truncatedBody}\n\n`;
     }
     if (searchResults.files && searchResults.files.length > 0) {
         formattedContext += `--- RELATED MANUALS / FILES ---\n`;
@@ -86,7 +88,11 @@ ${formattedContext}`
     const payload = {
         model: OLLAMA_MODEL,
         messages: [systemPrompt, ...messages],
-        stream: false
+        stream: false,
+        options: {
+            num_predict: 256,
+            temperature: 0.3
+        }
     };
 
     try {
