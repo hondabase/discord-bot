@@ -46,8 +46,8 @@ const loadCommands = async () => {
         for (const file of commandFiles) {
             const command = await import(`./commands/${file}`).catch(console.error);
             if (!command) continue;
-            
-            client.commands.set(file.split('.')[0], command);
+            const commandName = command.data?.name || file.split('.')[0];
+            client.commands.set(commandName, command);
         }
     } catch (error) {
         console.error('Failed to load commands:', error);

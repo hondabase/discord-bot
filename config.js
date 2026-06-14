@@ -22,4 +22,9 @@ export const FILES_MYSQL_USER = process.env.FILES_MYSQL_USER || MYSQL_USER
 export const FILES_MYSQL_PASSWORD = process.env.FILES_MYSQL_PASSWORD || MYSQL_PASSWORD
 export const FILES_MYSQL_DATABASE = process.env.FILES_MYSQL_DATABASE || 'hondabase_files'
 
+export const HONDABASE_MYSQL_HOST = process.env.HONDABASE_MYSQL_HOST || 'localhost'
+export const HONDABASE_MYSQL_USER = process.env.HONDABASE_MYSQL_USER || MYSQL_USER
+export const HONDABASE_MYSQL_PASSWORD = process.env.HONDABASE_MYSQL_PASSWORD || MYSQL_PASSWORD
+export const HONDABASE_MYSQL_DATABASE = process.env.HONDABASE_MYSQL_DATABASE || 'hondabase'
+
 export const WATCHDOG_WEBHOOK_URL = process.env.WATCHDOG_WEBHOOK_URL

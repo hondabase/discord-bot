@@ -9,7 +9,11 @@ import {
 	SHARED_DISCORD_MYSQL_DATABASE,
 	SHARED_DISCORD_MYSQL_HOST,
 	SHARED_DISCORD_MYSQL_PASSWORD,
-	SHARED_DISCORD_MYSQL_USER
+	SHARED_DISCORD_MYSQL_USER,
+	HONDABASE_MYSQL_DATABASE,
+	HONDABASE_MYSQL_HOST,
+	HONDABASE_MYSQL_PASSWORD,
+	HONDABASE_MYSQL_USER
 } from '../config.js';
 
 const pool = mysql.createPool({
@@ -36,6 +40,16 @@ export const sharedDiscordPool = mysql.createPool({
 	database: SHARED_DISCORD_MYSQL_DATABASE,
 	connectionLimit: 2
 });
+
+const hondabasePool = HONDABASE_MYSQL_USER && HONDABASE_MYSQL_DATABASE
+	? mysql.createPool({
+		host: HONDABASE_MYSQL_HOST,
+		user: HONDABASE_MYSQL_USER,
+		password: HONDABASE_MYSQL_PASSWORD,
+		database: HONDABASE_MYSQL_DATABASE,
+		connectionLimit: 2
+	})
+	: null;
 
 export async function logUserActivity(userId, username, action, details = null) {
 	if (!userId || !action) return;
@@ -307,4 +321,15 @@ export async function initDatabase() {
 	`);
 
 	await connection.end();
+}
+
+export async function getArticleCount() {
+	if (!hondabasePool) return 0;
+	try {
+		const [rows] = await hondabasePool.execute('SELECT COUNT(*) AS count FROM articles');
+		return Number(rows[0]?.count || 0);
+	} catch (error) {
+		console.error('Failed to get article count:', error);
+		return 0;
+	}
 }

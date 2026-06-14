@@ -1,13 +1,27 @@
 import { ActivityType } from "discord.js";
 import { ARTICLE_REQUEST_CHANNEL_ID } from '../config.js';
 import setupArticleRequestCollectors from '../utils/articleRequestCollectors.js';
-import { recordMemberJoin } from '../utils/database.js';
+import { recordMemberJoin, getArticleCount } from '../utils/database.js';
 
 export const name = 'ready';
 export async function execute(client) {
 	console.log(`Ready! Logged in as ${client.user.tag}`);
 	
-	client.user.setPresence({ activities: [{ name: 'We currently have 4 articles.', type: ActivityType.Custom }], status: 'online' });
+	const updatePresence = async () => {
+		try {
+			const count = await getArticleCount();
+			client.user.setPresence({
+				activities: [{ name: `We currently have ${count} articles.`, type: ActivityType.Custom }],
+				status: 'online'
+			});
+		} catch (error) {
+			console.error('Failed to update presence:', error);
+		}
+	};
+
+	await updatePresence();
+	setInterval(updatePresence, 10 * 60 * 1000); // refresh count every 10 minutes
+
 
 	// Fetch invites
 	for (const guild of client.guilds.cache.values()) {
