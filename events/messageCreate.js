@@ -5,7 +5,7 @@ import { getUserTimezone } from '../handlers/TimezoneHandler.js';
 import { STAFF_CHANNEL_ID, STAFF_ROLE_ID } from '../config.js';
 import { logUserActivity } from '../utils/database.js';
 import { checkMessageForBlockedImage } from '../utils/imageFingerprints.js';
-import { isAuthorized, handleThreadMessage, queryOllama, generateThreadTitle, splitMessage } from '../handlers/AiHandler.js';
+import { isAuthorized, handleThreadMessage, queryOllama, generateThreadTitle, splitMessage, startLoadingAnimation } from '../handlers/AiHandler.js';
 
 const INVITE_LINK_REGEX = /(discord\.gg\/|discord\.com\/invite\/)/i;
 
@@ -85,16 +85,17 @@ export async function execute(client, message) {
 						name: 'Hondabase+ AI Chat',
 						autoArchiveDuration: 60
 					});
-					const statusMsg = await thread.send('⏳ Enqueued...');
+					const statusMsg = await thread.send('⏳ Enqueued.');
+					const anim = startLoadingAnimation(statusMsg, '⏳ Enqueued.');
 
 					// Callback to handle real-time queue updates
 					const onQueueUpdate = async (pos, isProcessing) => {
 						try {
 							if (isProcessing) {
-								await statusMsg.edit('✍️ Soichiro is thinking...');
+								anim.updateText('✍️ Soichiro is thinking');
 								await thread.sendTyping().catch(() => {});
 							} else {
-								await statusMsg.edit(`⏳ Enqueued. Position in queue: ${pos}. Please wait...`);
+								anim.updateText(`⏳ Enqueued. Position in queue: ${pos}`);
 							}
 						} catch (err) {
 							// Fail silently
@@ -103,6 +104,8 @@ export async function execute(client, message) {
 
 					const userPrompt = history[0] ? history[0].content : message.content;
 					const replyText = await queryOllama(history, onQueueUpdate);
+					anim.stop();
+
 					const chunks = splitMessage(replyText);
 
 					await statusMsg.edit(`${message.author}, ${chunks[0]}`);
@@ -134,16 +137,17 @@ export async function execute(client, message) {
 				return;
 			}
 
-			const statusMsg = await message.reply('⏳ Enqueued...');
+			const statusMsg = await message.reply('⏳ Enqueued.');
+			const anim = startLoadingAnimation(statusMsg, '⏳ Enqueued.');
 
 			// Callback to handle real-time queue updates
 			const onQueueUpdate = async (pos, isProcessing) => {
 				try {
 					if (isProcessing) {
-						await statusMsg.edit('✍️ Soichiro is thinking...');
+						anim.updateText('✍️ Soichiro is thinking');
 						await message.channel.sendTyping().catch(() => {});
 					} else {
-						await statusMsg.edit(`⏳ Enqueued. Position in queue: ${pos}. Please wait...`);
+						anim.updateText(`⏳ Enqueued. Position in queue: ${pos}`);
 					}
 				} catch (err) {
 					// Fail silently
@@ -152,6 +156,8 @@ export async function execute(client, message) {
 
 			const messages = [{ role: 'user', content: cleanPrompt }];
 			const responseText = await queryOllama(messages, onQueueUpdate);
+			anim.stop();
+
 			const chunks = splitMessage(responseText);
 
 			await statusMsg.edit(chunks[0]);

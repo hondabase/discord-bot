@@ -1,5 +1,5 @@
 import { SlashCommandBuilder } from 'discord.js';
-import { isAuthorized, queryOllama, splitMessage } from '../handlers/AiHandler.js';
+import { isAuthorized, queryOllama, splitMessage, startLoadingAnimation } from '../handlers/AiHandler.js';
 
 export const data = new SlashCommandBuilder()
     .setName('ask')
@@ -26,6 +26,10 @@ export async function execute(interaction) {
     // Defer the reply since Ollama can take a few seconds
     await interaction.deferReply();
 
+    // Fetch the placeholder reply to animate
+    const statusMsg = await interaction.fetchReply();
+    const anim = startLoadingAnimation(statusMsg, '⏳ Enqueued');
+
     try {
         const messages = [{ role: 'user', content: prompt }];
         
@@ -33,16 +37,18 @@ export async function execute(interaction) {
         const onQueueUpdate = async (pos, isProcessing) => {
             try {
                 if (isProcessing) {
-                    await interaction.editReply({ content: '✍️ Soichiro is thinking...' });
+                    anim.updateText('✍️ Soichiro is thinking');
                 } else {
-                    await interaction.editReply({ content: `⏳ Enqueued. Position in queue: ${pos}. Please wait...` });
+                    anim.updateText(`⏳ Enqueued. Position in queue: ${pos}`);
                 }
             } catch (err) {
-                // Fail silently if interaction was deleted
+                // Fail silently
             }
         };
 
         const responseText = await queryOllama(messages, onQueueUpdate);
+        anim.stop();
+
         const chunks = splitMessage(responseText);
         
         // Update the deferred reply with the first chunk
@@ -54,6 +60,7 @@ export async function execute(interaction) {
         }
     } catch (error) {
         console.error('Error in ask slash command:', error);
+        anim.stop();
         await interaction.editReply({ 
             content: 'Sorry, I encountered an error while processing your request.' 
         });

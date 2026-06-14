@@ -148,8 +148,37 @@ export async function generateThreadTitle(userPrompt, botReply) {
     }
 }
 
+/**
+ * Starts a text animation with a moving ellipsis (...) on a Discord message.
+ */
+export function startLoadingAnimation(statusMsg, initialStatusText) {
+    let baseText = initialStatusText;
+    let dots = 1;
+
+    const interval = setInterval(async () => {
+        dots = (dots % 3) + 1;
+        const ellipsis = '.'.repeat(dots);
+        try {
+            await statusMsg.edit(`${baseText}${ellipsis}`);
+        } catch (err) {
+            // Clear if message gets deleted or edited externally
+            clearInterval(interval);
+        }
+    }, 1000);
+
+    return {
+        updateText: (newText) => {
+            baseText = newText;
+        },
+        stop: () => {
+            clearInterval(interval);
+        }
+    };
+}
+
 export async function handleThreadMessage(client, message) {
-    const statusMsg = await message.channel.send('⏳ Enqueued...');
+    const statusMsg = await message.channel.send('⏳ Enqueued.');
+    const anim = startLoadingAnimation(statusMsg, '⏳ Enqueued.');
 
     try {
         // Fetch last 50 messages to construct context
@@ -176,10 +205,10 @@ export async function handleThreadMessage(client, message) {
         const onQueueUpdate = async (pos, isProcessing) => {
             try {
                 if (isProcessing) {
-                    await statusMsg.edit('✍️ Soichiro is thinking...');
+                    anim.updateText('✍️ Soichiro is thinking');
                     await message.channel.sendTyping().catch(() => {});
                 } else {
-                    await statusMsg.edit(`⏳ Enqueued. Position in queue: ${pos}. Please wait...`);
+                    anim.updateText(`⏳ Enqueued. Position in queue: ${pos}`);
                 }
             } catch (err) {
                 // Fail silently if message is deleted
@@ -187,6 +216,8 @@ export async function handleThreadMessage(client, message) {
         };
 
         const replyText = await queryOllama(chatMessages, onQueueUpdate);
+        anim.stop();
+
         const chunks = splitMessage(replyText);
 
         await statusMsg.edit(chunks[0]);
@@ -195,6 +226,7 @@ export async function handleThreadMessage(client, message) {
         }
     } catch (error) {
         console.error('Error handling thread message:', error);
+        anim.stop();
         try {
             await statusMsg.edit('An error occurred while continuing the conversation.');
         } catch (e) {
